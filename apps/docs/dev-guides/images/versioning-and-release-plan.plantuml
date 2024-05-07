@@ -1,0 +1,38 @@
+@startuml
+skinparam backgroundColor #FAFAFA
+skinparam sequenceArrowThickness 2
+
+title Developer Workflow for Versioning and Releases
+
+actor Developer as dev
+participant "Feature\nBranch" as feature
+participant "Staging\nBranch" as staging
+participant "Main\nBranch" as main
+participant CI_CD as ci
+participant "NPM & Docker\nRegistry" as registry
+
+== Feature Development ==
+dev -> staging : Creates feature branch from\nstaging branch
+staging -> feature : New feature branch from staging
+
+== Alpha Release ==
+dev -> staging : PR into staging\n(Version bump before merge)
+feature -[dotted]-> staging : PR from feature into staging
+staging -> ci : CI/CD runs tests
+ci -> registry : Publishes Alpha Release
+
+== Staging / Beta Release ==
+dev -> feature : Prepares version bump\nusing Lerna (pre-merge)
+dev -> staging : Merges PR into staging
+note right of staging : Required: Version bump\nbefore merge
+staging -> ci : CI/CD enforces version bump\nFails if no bump
+ci -> registry : Publishes Beta Release
+
+== Main / Stable Release ==
+dev -> main : Opens PR from staging to main
+staging -[dotted]-> main : PR from staging to main
+dev -> main : Merges PR from staging to main
+main -> ci : CI/CD runs tests
+ci -> registry : Publishes Stable Release
+
+@enduml

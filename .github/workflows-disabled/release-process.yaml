@@ -1,0 +1,122 @@
+# This is a reusable workflow that defines common steps for different release types.
+name: Release Process
+
+# The `workflow_call` trigger makes this workflow reusable from other workflows.
+# This defines the input variables accepted
+on:
+  workflow_call:
+    inputs:
+      node_version:
+        required: true
+        type: string
+      npm_registry_url:
+        required: true
+        type: string
+      org_name:
+        required: true
+        type: string
+      package_name:
+        required: true
+        type: string
+      docker_path:
+        required: true
+        type: string
+      container_registry:
+        required: true
+        type: string
+      image_name:
+        required: true
+        type: string
+      release_type:
+        required: true
+        type: string
+
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: "0" # pulls all history and tags for Lerna to detect what packages changed.
+          token: ${{ secrets.GITHUB_TOKEN }} # this token is available by default
+          # # Required for Lerna to be able to push commits
+          # persist-credentials: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          # NOTE: Registry URL for node packages
+          registry-url: https://registry.npmjs.org
+          scope: 'turbo-repo-template' # Set the scope if you're using scoped packages
+
+      # NOTE: This workflow uses yarn
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build all workspaces
+        run: yarn build
+
+      - name: Run tests with Turbo
+        # --filter=...origin/main tells TurboRepo to run the test command on all packages that have changed compared to the origin/main branch, as well as their dependencies.   
+        run: npx turbo run test --filter=...origin/main
+
+      # Create a release tag based on the release type, version in package.json, PR number, and run number
+      # Example release tags based on release_type:
+      # - If release_type is "alpha", the tag might look like "1.0.0.alpha.PR-123.RN-42"
+      # - If release_type is "beta", the tag might look like "1.0.0.beta.RN-42"
+      # - If release_type is "stable", the tag would be the version itself, e.g., "1.0.0"
+      - name: Create Release Tag
+       # NOTE: Using lerna.json to pull the overall monorepo version
+        run: |
+          VERSION=$(jq -r '.version' lerna.json)
+          RUN_NUMBER=${{ github.run_number }}
+          echo "Run number: $RUN_NUMBER"
+          
+          if [ "${{ inputs.release_type }}" = "alpha" ]; then
+            PR_NUMBER=$(echo ${{ github.event.pull_request.number }})
+            echo "RELEASE_TAG=${VERSION}.alpha.PR-${PR_NUMBER}.RN-${RUN_NUMBER}" >> $GITHUB_ENV
+          elif [ "${{ inputs.release_type }}" = "beta" ]; then
+            echo "RELEASE_TAG=${VERSION}.beta.RN-${RUN_NUMBER}" >> $GITHUB_ENV
+          elif [ "${{ inputs.release_type }}" = "stable" ]; then
+            if ! [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Version $VERSION does not follow the MAJOR.MINOR.PATCH pattern."
+              exit 1
+            fi
+            echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
+          else
+            echo "Unknown release type: ${{ inputs.release_type }}"
+            exit 1
+          fi
+
+      # TODO: Haven't been able to get this working
+      # # NOTE: Ideally non-stable versions are private, but NPM requires a pro plan
+      # # Publish the package to npm using Lerna
+      # - name: Publish to npm with Lerna
+      #   run: |
+      #     RUN_NUMBER=${{ github.run_number }}
+      #     if [ "${{ inputs.release_type }}" = "stable" ]; then
+      #       npx lerna publish from-package --yes --no-private --dist-tag latest --no-verify-access
+      #     elif [ "${{ inputs.release_type }}" = "beta" ]; then
+      #       npx lerna publish from-package --yes --no-private --dist-tag beta --no-verify-access
+      #     elif [ "${{ inputs.release_type }}" = "alpha" ]; then
+      #       npx lerna publish --canary --preid alpha.${RUN_NUMBER} --yes --no-private --dist-tag alpha --no-verify-access
+      #     fi
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # set this token manually
+
+      # Build the Docker container for the API using the dockerBuild.js script
+      - name: Build API Docker Container
+        run: yarn docker:build:api:linux ${{ env.RELEASE_TAG }}
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+
+      # Log in to the Docker registry
+      - name: Log in to Docker Registry
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      # Push the Docker container to the registry
+      - name: Push Docker Container
+        run: docker push ghcr.io/${{ inputs.org_name }}/${{ inputs.image_name }}:$RELEASE_TAG

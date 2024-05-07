@@ -1,0 +1,40 @@
+{
+  "name": "turbo-repo-template",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "contracts/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "clean": "turbo run clean",
+    "dev": "turbo run dev",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "docker:build": "docker-compose build",
+    "docker:build:force": "docker-compose build --no-cache",
+    "docker:up": "docker-compose up -d",
+    "docker:up:force": "docker-compose up -d --build",
+    "docker:down": "docker-compose down",
+    "docker:restart": "docker-compose restart",
+    "docker:logs": "docker-compose logs -f",
+    "lerna:version": "lerna version",
+    "lerna:version:no-push": "lerna version --no-push",
+    "lerna:version:commits": "lerna version --conventional-commits",
+    "lerna:publish": "npx lerna publish from-package --yes --no-private"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "lerna": "8.1.2",
+    "prettier": "3.2.5",
+    "turbo": "1.12.4"
+  },
+  "packageManager": "yarn@1.22.19",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=7.0.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+    "cSpell.words": [
+        "bodyparser",
+        "Numberish",
+        "openapi",
+        "rainbowkit",
+        "tanstack",
+        "trpc",
+        "Wagmi"
+    ],
+    // Enable markdown snippets
+    "[markdown]": { "editor.quickSuggestions": { "other": "on" }},
+    "workbench.colorCustomizations": {
+        "activityBar.background": "#FF0000",
+        "activityBar.foreground": "#000000",
+        "titleBar.activeBackground": "#000000",
+        "titleBar.activeForeground": "#cacaca"
+    }
+}

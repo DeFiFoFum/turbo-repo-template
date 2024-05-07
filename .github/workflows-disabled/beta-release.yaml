@@ -1,0 +1,27 @@
+name: Beta Release
+
+# Trigger the workflow on push to the staging branch
+on:
+  push:
+    branches:
+      - staging
+
+permissions:
+  contents: read
+  # Set permissions to allow actions to save the docker image to the package directory.
+  # For Github (ghcr.io), you also need to link the repo to the package and give it write access.
+  packages: write
+
+jobs:
+  beta-release:
+    uses: ./.github/workflows/release-process.yaml
+    with:
+      node_version: '18.x'
+      npm_registry_url: https://registry.npmjs.org
+      org_name: 'turbo-repo-template'
+      package_name: 'turbo-repo-template'
+      docker_path: './apps/api'
+      container_registry: 'ghcr.io'
+      image_name: 'turbo-repo-template'
+      # Denotes a beta release
+      release_type: 'beta'

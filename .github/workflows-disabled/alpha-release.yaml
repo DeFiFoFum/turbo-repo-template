@@ -1,0 +1,29 @@
+name: Alpha Release
+
+# Trigger the workflow on every pull request to any branch
+on: 
+  pull_request:
+    # The 'types' key specifies the types of pull request events that will trigger the workflow.
+    # 'opened': Triggered when a new pull request is created.
+    # 'synchronize': Triggered when new commits are pushed to the pull request's branch.
+    # 'reopened': Triggered when a closed pull request is reopened.
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  # Set permissions to allow actions to save the docker image to the package directory.
+  # For Github (ghcr.io), you also need to link the repo to the package and give it write access.
+  packages: write
+
+jobs:
+  alpha-release:
+    uses: ./.github/workflows/release-process.yaml
+    with:
+      node_version: '18.x'
+      npm_registry_url: https://registry.npmjs.org
+      org_name: 'turbo-repo-template'
+      package_name: 'turbo-repo-template'
+      docker_path: './apps/api'
+      container_registry: 'ghcr.io'
+      image_name: 'turbo-repo-template'
+      release_type: 'alpha'
