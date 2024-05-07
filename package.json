@@ -24,7 +24,9 @@
     "lerna:version": "lerna version",
     "lerna:version:no-push": "lerna version --no-push",
     "lerna:version:commits": "lerna version --conventional-commits",
-    "lerna:publish": "npx lerna publish from-package --yes --no-private"
+    "lerna:publish": "npx lerna publish from-package --yes --no-private",
+    "template:generic": "node ./scripts/templates/createPackageFromGenericTemplate.js",
+    "template:hardhat": "node ./scripts/templates/createHardhatContractPackage.js"
   },
   "dependencies": {},
   "devDependencies": {

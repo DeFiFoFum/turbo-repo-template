@@ -31,4 +31,6 @@ yarn lint # Lint all packages
 yarn lerna:version[:no-push] # Run lerna version with or without pushing to git
 yarn lerna:publish # Publish all public packages (package.json: "private": false)
 yarn docker:build # Build the docker-compose file in the root composing the packages
+yarn template:generic # Create a package from a template on GitHub
+yarn template:hardhat # Create a contract package from @DeFiFoFum/hardhat-template
 ```
